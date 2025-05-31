@@ -17,7 +17,7 @@ st.set_page_config(
 )
 
 # Page header
-st.title("🍳 Smart Recipe Recommendation System")
+st.title("🍳 Smart Recipe Finder")
 st.markdown("### Find delicious recipes based on ingredients you have!")
 
 # User input for ingredients
@@ -81,14 +81,54 @@ if st.button("Find Recipes"):
                             if recipe.get('glutenFree'):
                                 st.markdown("🌾 Gluten Free")
                             
-                            # Links section
-                            st.markdown("### 📚 Learn More")
-                            if recipe.get('sourceUrl'):
-                                st.markdown(f"[🔗 Full Recipe & Instructions]({recipe['sourceUrl']})")
+                            # Get detailed recipe information
+                            recipe_id = recipe['id']
+                            detail_url = f"https://api.spoonacular.com/recipes/{recipe_id}/information"
+                            detail_params = {
+                                "apiKey": API_KEY
+                            }
                             
-                            # Video tutorial if available
-                            if recipe.get('videoUrl'):
-                                st.markdown(f"[📺 Watch Video Tutorial]({recipe['videoUrl']})")
+                            try:
+                                detail_response = requests.get(detail_url, params=detail_params)
+                                recipe_details = detail_response.json()
+                                
+                                # Links section
+                                st.markdown("### 📚 Learn More")
+                                
+                                # Original source link
+                                if recipe_details.get('sourceUrl'):
+                                    st.markdown(f"[🔗 Original Recipe]({recipe_details['sourceUrl']})")
+                                
+                                # Add alternative recipe sources
+                                search_query = recipe['title'].replace(" ", "+")
+                                
+                                st.markdown("### 🌐 Alternative Recipe Sources")
+                                st.markdown(f"[▶️ YouTube Tutorials](https://www.youtube.com/results?search_query={search_query}+recipe+tutorial)")
+                                st.markdown(f"[📝 AllRecipes](https://www.allrecipes.com/search?q={search_query})")
+                                st.markdown(f"[🍳 Food Network](https://www.foodnetwork.com/search/{search_query}-)")
+                                
+                                # Display ingredients and instructions
+                                with st.expander("📋 View Ingredients and Instructions"):
+                                    # Ingredients
+                                    st.markdown("#### Ingredients:")
+                                    for ingredient in recipe_details.get('extendedIngredients', []):
+                                        st.markdown(f"- {ingredient.get('original', '')}")
+                                    
+                                    # Instructions
+                                    st.markdown("#### Instructions:")
+                                    if recipe_details.get('instructions'):
+                                        st.markdown(recipe_details['instructions'])
+                                    else:
+                                        st.markdown("_Detailed instructions available in the recipe links above._")
+                                
+                            except Exception as e:
+                                st.warning("Couldn't load detailed recipe information. Please try the alternative sources below.")
+                                # Provide alternative links even if detailed info fails
+                                st.markdown("### 🌐 Find Recipe Here")
+                                search_query = recipe['title'].replace(" ", "+")
+                                st.markdown(f"[▶️ YouTube Tutorials](https://www.youtube.com/results?search_query={search_query}+recipe+tutorial)")
+                                st.markdown(f"[📝 AllRecipes](https://www.allrecipes.com/search?q={search_query})")
+                                st.markdown(f"[🍳 Food Network](https://www.foodnetwork.com/search/{search_query}-)")
                             
                             st.markdown("---")
             else:
@@ -113,10 +153,10 @@ with st.sidebar:
        - Try different cuisine types
        - Include both proteins and vegetables
     
-    3. **Learning Resources:**
-       - Each recipe includes detailed instructions
-       - Look for video tutorials when available
-       - Save interesting recipes using the source links
+    3. **Recipe Sources:**
+       - Multiple recipe sources are provided
+       - Try YouTube tutorials for visual guidance
+       - Check trusted recipe websites
     """)
     
     st.markdown("### 🎯 Features")
@@ -124,9 +164,9 @@ with st.sidebar:
     - Find recipes by ingredients
     - Filter by cuisine type
     - View cooking time and servings
-    - Access full recipes with instructions
-    - Watch video tutorials (when available)
-    - Diet-specific indicators
+    - Access multiple recipe sources
+    - Watch video tutorials
+    - See detailed ingredients and instructions
     """)
 
 # Footer
@@ -134,5 +174,5 @@ st.markdown("---")
 st.markdown("### About")
 st.markdown("""
 This recipe finder helps you discover delicious meals based on ingredients you already have. 
-Each recipe comes with detailed instructions and helpful resources to improve your cooking skills.
+Each recipe comes with multiple learning resources to ensure you can find the perfect tutorial for your cooking style.
 """)
