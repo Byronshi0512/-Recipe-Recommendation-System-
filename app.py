@@ -3,83 +3,136 @@ import requests
 import os
 from dotenv import load_dotenv
 
-# 加载环境变量
+# Load environment variables
 load_dotenv()
 
-# Spoonacular API密钥
+# Spoonacular API key
 API_KEY = os.getenv('SPOONACULAR_API_KEY')
 
-# 设置页面配置
+# Page configuration
 st.set_page_config(
-    page_title="智能菜谱推荐",
+    page_title="Smart Recipe Finder",
     page_icon="🍳",
     layout="wide"
 )
 
-# 页面标题
-st.title("🍳 智能菜谱推荐系统")
-st.markdown("### 根据您现有的食材推荐美味菜谱")
+# Page header
+st.title("🍳 Smart Recipe Recommendation System")
+st.markdown("### Find delicious recipes based on ingredients you have!")
 
-# 用户输入食材
-ingredients = st.text_input("请输入您有的食材（用逗号分隔）", "鸡肉, 西红柿")
+# User input for ingredients
+ingredients = st.text_input(
+    "Enter your ingredients (separate with commas)", 
+    "chicken, tomato"
+)
 
-if st.button("查找菜谱"):
+# Add cuisine filter
+cuisines = [
+    "All", "American", "Italian", "Asian", "Mexican", "Mediterranean", 
+    "French", "Indian", "Chinese", "Japanese", "Thai"
+]
+selected_cuisine = st.selectbox("Select cuisine type (optional)", cuisines)
+
+if st.button("Find Recipes"):
     if ingredients:
-        # 调用API
-        url = f"https://api.spoonacular.com/recipes/findByIngredients"
+        # Call API
+        url = "https://api.spoonacular.com/recipes/complexSearch"
+        
         params = {
             "apiKey": API_KEY,
-            "ingredients": ingredients,
-            "number": 5,
-            "ranking": 2,
-            "ignorePantry": True
+            "includeIngredients": ingredients,
+            "addRecipeInformation": True,
+            "instructionsRequired": True,
+            "fillIngredients": True,
+            "number": 6,
+            "sort": "max-used-ingredients",
         }
+        
+        # Add cuisine filter if not "All"
+        if selected_cuisine != "All":
+            params["cuisine"] = selected_cuisine
         
         try:
             response = requests.get(url, params=params)
-            recipes = response.json()
+            recipes = response.json()['results']
             
             if recipes:
-                for recipe in recipes:
-                    col1, col2 = st.columns([1, 3])
-                    
-                    with col1:
-                        st.image(recipe['image'], use_column_width=True)
-                    
-                    with col2:
-                        st.subheader(recipe['title'])
-                        st.write("已匹配的食材：")
-                        for used in recipe['usedIngredients']:
-                            st.write(f"✅ {used['name']}")
-                        
-                        st.write("还需要的食材：")
-                        for missing in recipe['missedIngredients']:
-                            st.write(f"❌ {missing['name']}")
-                        
-                        # 获取详细菜谱信息
-                        recipe_id = recipe['id']
-                        detail_url = f"https://api.spoonacular.com/recipes/{recipe_id}/information"
-                        detail_params = {
-                            "apiKey": API_KEY
-                        }
-                        detail_response = requests.get(detail_url, params=detail_params)
-                        recipe_details = detail_response.json()
-                        
-                        if 'sourceUrl' in recipe_details:
-                            st.markdown(f"[查看完整菜谱]({recipe_details['sourceUrl']})")
-                    
-                    st.markdown("---")
+                st.markdown("## 🎉 Found Recipes")
+                
+                # Create three columns
+                cols = st.columns(3)
+                
+                for idx, recipe in enumerate(recipes):
+                    with cols[idx % 3]:
+                        # Create a card-like container
+                        with st.container():
+                            st.image(recipe['image'], use_column_width=True)
+                            st.markdown(f"### {recipe['title']}")
+                            
+                            # Recipe quick info
+                            st.markdown(f"⏱️ Ready in: {recipe['readyInMinutes']} minutes")
+                            st.markdown(f"👥 Servings: {recipe['servings']}")
+                            
+                            # Health info
+                            if recipe.get('vegetarian'):
+                                st.markdown("🥬 Vegetarian")
+                            if recipe.get('vegan'):
+                                st.markdown("🌱 Vegan")
+                            if recipe.get('glutenFree'):
+                                st.markdown("🌾 Gluten Free")
+                            
+                            # Links section
+                            st.markdown("### 📚 Learn More")
+                            if recipe.get('sourceUrl'):
+                                st.markdown(f"[🔗 Full Recipe & Instructions]({recipe['sourceUrl']})")
+                            
+                            # Video tutorial if available
+                            if recipe.get('videoUrl'):
+                                st.markdown(f"[📺 Watch Video Tutorial]({recipe['videoUrl']})")
+                            
+                            st.markdown("---")
             else:
-                st.warning("没有找到相关菜谱，请尝试其他食材组合。")
+                st.warning("No recipes found with these ingredients. Try different combinations!")
                 
         except Exception as e:
-            st.error(f"发生错误：{str(e)}")
+            st.error(f"An error occurred: {str(e)}")
     else:
-        st.warning("请输入至少一种食材")
+        st.warning("Please enter at least one ingredient")
 
-# 页面底部信息
+# Sidebar with tips
+with st.sidebar:
+    st.markdown("### 💡 Tips for Better Results")
+    st.markdown("""
+    1. **Ingredient Tips:**
+       - Use common ingredient names
+       - Separate ingredients with commas
+       - Be specific (e.g., 'chicken breast' instead of just 'chicken')
+    
+    2. **Search Tips:**
+       - Start with 2-3 main ingredients
+       - Try different cuisine types
+       - Include both proteins and vegetables
+    
+    3. **Learning Resources:**
+       - Each recipe includes detailed instructions
+       - Look for video tutorials when available
+       - Save interesting recipes using the source links
+    """)
+    
+    st.markdown("### 🎯 Features")
+    st.markdown("""
+    - Find recipes by ingredients
+    - Filter by cuisine type
+    - View cooking time and servings
+    - Access full recipes with instructions
+    - Watch video tutorials (when available)
+    - Diet-specific indicators
+    """)
+
+# Footer
 st.markdown("---")
-st.markdown("### 使用说明")
-st.write("1. 输入您家中现有的食材，用逗号分隔")
-st.write("2. 点击"查找菜谱"按钮获取推荐")
-st.write("3. 系统会显示可以使用这些食材制作的菜谱")
+st.markdown("### About")
+st.markdown("""
+This recipe finder helps you discover delicious meals based on ingredients you already have. 
+Each recipe comes with detailed instructions and helpful resources to improve your cooking skills.
+""")
