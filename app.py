@@ -91,8 +91,8 @@ if st.button("Find Recipes"):
                         with st.container():
                             st.markdown('<div class="recipe-card">', unsafe_allow_html=True)
                             
-                            # Recipe image
-                            st.image(recipe['image'], use_column_width=True)
+                            # Recipe image - Updated parameter here
+                            st.image(recipe['image'], use_container_width=True)
                             st.markdown(f"### {recipe['title']}")
                             
                             # Recipe quick info with icons
