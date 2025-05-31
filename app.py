@@ -16,9 +16,32 @@ st.set_page_config(
     layout="wide"
 )
 
-# Page header
-st.title("🍳 Smart Recipe Finder")
-st.markdown("### Find delicious recipes based on ingredients you have!")
+# Page header with custom styling
+st.markdown("""
+    <style>
+    .main-header {
+        font-size: 2.5em;
+        color: #FF4B4B;
+        text-align: center;
+        margin-bottom: 1em;
+    }
+    .sub-header {
+        font-size: 1.5em;
+        color: #666666;
+        text-align: center;
+        margin-bottom: 2em;
+    }
+    .recipe-card {
+        background-color: #FFFFFF;
+        padding: 1.5em;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+st.markdown('<h1 class="main-header">🍳 Smart Recipe Finder</h1>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">Find delicious recipes based on ingredients you have!</p>', unsafe_allow_html=True)
 
 # User input for ingredients
 ingredients = st.text_input(
@@ -66,49 +89,62 @@ if st.button("Find Recipes"):
                     with cols[idx % 3]:
                         # Create a card-like container
                         with st.container():
+                            st.markdown('<div class="recipe-card">', unsafe_allow_html=True)
+                            
+                            # Recipe image
                             st.image(recipe['image'], use_column_width=True)
                             st.markdown(f"### {recipe['title']}")
                             
-                            # Recipe quick info
+                            # Recipe quick info with icons
                             st.markdown(f"⏱️ Ready in: {recipe['readyInMinutes']} minutes")
                             st.markdown(f"👥 Servings: {recipe['servings']}")
                             
-                            # Health info
+                            # Health info with colored badges
+                            health_info = []
                             if recipe.get('vegetarian'):
-                                st.markdown("🥬 Vegetarian")
+                                health_info.append("🥬 Vegetarian")
                             if recipe.get('vegan'):
-                                st.markdown("🌱 Vegan")
+                                health_info.append("🌱 Vegan")
                             if recipe.get('glutenFree'):
-                                st.markdown("🌾 Gluten Free")
+                                health_info.append("🌾 Gluten Free")
+                            if health_info:
+                                st.markdown(" | ".join(health_info))
                             
-                            # Get detailed recipe information
-                            recipe_id = recipe['id']
-                            detail_url = f"https://api.spoonacular.com/recipes/{recipe_id}/information"
-                            detail_params = {
-                                "apiKey": API_KEY
-                            }
+                            # YouTube Tutorial Link
+                            search_query = recipe['title'].replace(" ", "+") + "+recipe+tutorial"
+                            st.markdown("""
+                                <style>
+                                .youtube-link {
+                                    display: inline-block;
+                                    background-color: #FF0000;
+                                    color: white !important;
+                                    padding: 0.5em 1em;
+                                    text-decoration: none;
+                                    border-radius: 5px;
+                                    margin-top: 1em;
+                                    text-align: center;
+                                    width: 100%;
+                                }
+                                .youtube-link:hover {
+                                    background-color: #CC0000;
+                                }
+                                </style>
+                            """, unsafe_allow_html=True)
+                            st.markdown(f'<a href="https://www.youtube.com/results?search_query={search_query}" target="_blank" class="youtube-link">▶️ Watch Tutorial on YouTube</a>', unsafe_allow_html=True)
                             
-                            try:
-                                detail_response = requests.get(detail_url, params=detail_params)
-                                recipe_details = detail_response.json()
+                            # Recipe details in expander
+                            with st.expander("📋 View Ingredients and Instructions"):
+                                # Get detailed recipe information
+                                recipe_id = recipe['id']
+                                detail_url = f"https://api.spoonacular.com/recipes/{recipe_id}/information"
+                                detail_params = {
+                                    "apiKey": API_KEY
+                                }
                                 
-                                # Links section
-                                st.markdown("### 📚 Learn More")
-                                
-                                # Original source link
-                                if recipe_details.get('sourceUrl'):
-                                    st.markdown(f"[🔗 Original Recipe]({recipe_details['sourceUrl']})")
-                                
-                                # Add alternative recipe sources
-                                search_query = recipe['title'].replace(" ", "+")
-                                
-                                st.markdown("### 🌐 Alternative Recipe Sources")
-                                st.markdown(f"[▶️ YouTube Tutorials](https://www.youtube.com/results?search_query={search_query}+recipe+tutorial)")
-                                st.markdown(f"[📝 AllRecipes](https://www.allrecipes.com/search?q={search_query})")
-                                st.markdown(f"[🍳 Food Network](https://www.foodnetwork.com/search/{search_query}-)")
-                                
-                                # Display ingredients and instructions
-                                with st.expander("📋 View Ingredients and Instructions"):
+                                try:
+                                    detail_response = requests.get(detail_url, params=detail_params)
+                                    recipe_details = detail_response.json()
+                                    
                                     # Ingredients
                                     st.markdown("#### Ingredients:")
                                     for ingredient in recipe_details.get('extendedIngredients', []):
@@ -119,17 +155,12 @@ if st.button("Find Recipes"):
                                     if recipe_details.get('instructions'):
                                         st.markdown(recipe_details['instructions'])
                                     else:
-                                        st.markdown("_Detailed instructions available in the recipe links above._")
-                                
-                            except Exception as e:
-                                st.warning("Couldn't load detailed recipe information. Please try the alternative sources below.")
-                                # Provide alternative links even if detailed info fails
-                                st.markdown("### 🌐 Find Recipe Here")
-                                search_query = recipe['title'].replace(" ", "+")
-                                st.markdown(f"[▶️ YouTube Tutorials](https://www.youtube.com/results?search_query={search_query}+recipe+tutorial)")
-                                st.markdown(f"[📝 AllRecipes](https://www.allrecipes.com/search?q={search_query})")
-                                st.markdown(f"[🍳 Food Network](https://www.foodnetwork.com/search/{search_query}-)")
+                                        st.markdown("_Please check the YouTube tutorial for detailed instructions._")
+                                        
+                                except Exception as e:
+                                    st.markdown("_Please check the YouTube tutorial for ingredients and instructions._")
                             
+                            st.markdown('</div>', unsafe_allow_html=True)
                             st.markdown("---")
             else:
                 st.warning("No recipes found with these ingredients. Try different combinations!")
@@ -153,10 +184,10 @@ with st.sidebar:
        - Try different cuisine types
        - Include both proteins and vegetables
     
-    3. **Recipe Sources:**
-       - Multiple recipe sources are provided
-       - Try YouTube tutorials for visual guidance
-       - Check trusted recipe websites
+    3. **Tutorial Tips:**
+       - Click on YouTube link for video instructions
+       - Watch full tutorials for best results
+       - Save your favorite videos for future reference
     """)
     
     st.markdown("### 🎯 Features")
@@ -164,9 +195,9 @@ with st.sidebar:
     - Find recipes by ingredients
     - Filter by cuisine type
     - View cooking time and servings
-    - Access multiple recipe sources
-    - Watch video tutorials
-    - See detailed ingredients and instructions
+    - Watch video tutorials on YouTube
+    - See detailed ingredients list
+    - Check dietary information
     """)
 
 # Footer
@@ -174,5 +205,5 @@ st.markdown("---")
 st.markdown("### About")
 st.markdown("""
 This recipe finder helps you discover delicious meals based on ingredients you already have. 
-Each recipe comes with multiple learning resources to ensure you can find the perfect tutorial for your cooking style.
+Each recipe comes with a direct link to video tutorials on YouTube to help you master the dish.
 """)
