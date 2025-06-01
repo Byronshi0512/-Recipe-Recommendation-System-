@@ -2,13 +2,6 @@ import streamlit as st
 import requests
 import os
 from dotenv import load_dotenv
-# 在代码最开始部分添加（在import之后）
-with st.spinner("🚀 Starting up the app... Please wait a moment..."):
-    # 添加一个小延迟来显示加载消息
-    import time
-    time.sleep(2)
-
-st.snow()  # 添加一个有趣的动画效果
 
 # Load environment variables
 load_dotenv()
